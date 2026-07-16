@@ -1,6 +1,8 @@
 package com.nishu.elms.controller;
 
+import com.nishu.elms.dto.request.LoginRequest;
 import com.nishu.elms.dto.request.RegisterRequest;
+import com.nishu.elms.dto.response.LoginResponse;
 import com.nishu.elms.dto.response.RegisterResponse;
 import com.nishu.elms.service.AuthService;
 import jakarta.validation.Valid;
@@ -25,5 +27,12 @@ public class AuthController {
         RegisterResponse response = authService.register(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
 
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request
+            ){
+        return ResponseEntity.ok(authService.login(request));
     }
 }
