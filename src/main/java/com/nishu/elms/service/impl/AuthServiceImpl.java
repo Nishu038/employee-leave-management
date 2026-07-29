@@ -12,6 +12,7 @@ import com.nishu.elms.exception.ResourceNotFoundException;
 import com.nishu.elms.repository.RoleRepository;
 import com.nishu.elms.repository.UserRepository;
 import com.nishu.elms.security.CustomUserDetails;
+import com.nishu.elms.security.jwt.JwtService;
 import com.nishu.elms.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -33,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -40,9 +42,10 @@ public class AuthServiceImpl implements AuthService {
         if(userRepository.existsByEmail(request.getEmail())){
             throw new EmailAlreadyExistsException("Email already exists.");
         }
+
         // Step 2 : Fetch Employee Role
-        Role employeeRole = roleRepository.findByName(RoleName.ROLE_EMPLOYEE)
-                .orElseThrow(() -> new ResourceNotFoundException("Default role not found"));
+//        Role employeeRole = roleRepository.findByName(RoleName.ROLE_EMPLOYEE)
+//                .orElseThrow(() -> new ResourceNotFoundException("Default role not found"));
 
         // Step 3 : Create User
         User user = User.builder().
@@ -52,9 +55,20 @@ public class AuthServiceImpl implements AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber()).enabled(true)
                 .build();
-        Set<Role> roles = new HashSet<>();
-        roles.add(employeeRole);
-        user.setRoles(roles);
+        Role role;
+
+        if (request.getEmail().equals("manager@gmail.com")) {
+            role = roleRepository.findByName(RoleName.ROLE_MANAGER)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        } else {
+            role = roleRepository.findByName(RoleName.ROLE_EMPLOYEE)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        }
+
+        user.setRoles(Set.of(role));
+//        Set<Role> roles = new HashSet<>();
+//        roles.add(employeeRole);
+//        user.setRoles(roles);
 
         //step 4:save
         User savedUser = userRepository.save(user);
@@ -77,6 +91,7 @@ public class AuthServiceImpl implements AuthService {
         );
         CustomUserDetails userDetails =
                 (CustomUserDetails) authentication.getPrincipal();
+        String token = jwtService.generateToken(userDetails);
         String role = userDetails.getAuthorities()
                 .stream()
                 .findFirst()
@@ -87,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
                 .message("Login Successful")
                 .email(userDetails.getUsername())
                 .role(role)
-                .token(null)
+                .token(token)
                 .build();
     }
 }

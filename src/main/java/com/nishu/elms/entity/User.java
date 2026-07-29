@@ -3,7 +3,9 @@ package com.nishu.elms.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -39,6 +41,13 @@ public class User extends BaseEntity{
     )
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Leave> leaves = new ArrayList<>();
 
 
 
