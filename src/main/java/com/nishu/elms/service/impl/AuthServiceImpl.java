@@ -44,8 +44,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Step 2 : Fetch Employee Role
-//        Role employeeRole = roleRepository.findByName(RoleName.ROLE_EMPLOYEE)
-//                .orElseThrow(() -> new ResourceNotFoundException("Default role not found"));
+        Role employeeRole = roleRepository.findByName(RoleName.ROLE_EMPLOYEE)
+                .orElseThrow(() -> new ResourceNotFoundException("Default role not found"));
 
         // Step 3 : Create User
         User user = User.builder().
@@ -57,18 +57,18 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         Role role;
 
-        if (request.getEmail().equals("manager@gmail.com")) {
-            role = roleRepository.findByName(RoleName.ROLE_MANAGER)
-                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-        } else {
-            role = roleRepository.findByName(RoleName.ROLE_EMPLOYEE)
-                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-        }
-
-        user.setRoles(Set.of(role));
-//        Set<Role> roles = new HashSet<>();
-//        roles.add(employeeRole);
-//        user.setRoles(roles);
+//        if (request.getEmail().equals("manager@gmail.com")) {
+//            role = roleRepository.findByName(RoleName.ROLE_MANAGER)
+//                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+//        } else {
+//            role = roleRepository.findByName(RoleName.ROLE_EMPLOYEE)
+//                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+//        }
+//
+//        user.setRoles(Set.of(role));
+        Set<Role> roles = new HashSet<>();
+        roles.add(employeeRole);
+        user.setRoles(roles);
 
         //step 4:save
         User savedUser = userRepository.save(user);

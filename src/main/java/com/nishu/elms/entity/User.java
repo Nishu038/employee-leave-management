@@ -49,6 +49,8 @@ public class User extends BaseEntity{
     )
     private List<Leave> leaves = new ArrayList<>();
 
-
+   @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
 
 }

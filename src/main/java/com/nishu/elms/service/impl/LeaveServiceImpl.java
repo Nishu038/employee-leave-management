@@ -11,6 +11,8 @@ import com.nishu.elms.repository.UserRepository;
 import com.nishu.elms.service.CurrentUserService;
 import com.nishu.elms.service.LeaveService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,19 @@ public class LeaveServiceImpl implements LeaveService {
         return mapToResponse(savedLeave);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<LeaveResponse> getMyLeaves(LeaveStatus status, Pageable pageable) {
+        User user = currentUserService.getCurrentUser();
+        Page<Leave> leavePage;
+        if(status == null){
+            leavePage = leaveRepository.findByUser(user,pageable);
+        }else{
+            leavePage = leaveRepository.findByUserAndStatus(user,status,pageable);
+        }
+        return leavePage.map(this::mapToResponse);
+    }
+
     private LeaveResponse mapToResponse(Leave leave){
         return new LeaveResponse(
                 leave.getId(),
@@ -49,23 +64,34 @@ public class LeaveServiceImpl implements LeaveService {
                 leave.getUser().getId()
         );
     }
-    @Override
-    public List<LeaveResponse> getMyLeaves() {
-        User user = currentUserService.getCurrentUser();
-        return leaveRepository.findByUser(user)
-                .stream().map(this::mapToResponse)
-                .toList();
-    }
+//    @Override
+//    public List<LeaveResponse> getMyLeaves() {
+//        User user = currentUserService.getCurrentUser();
+//        return leaveRepository.findByUser(user)
+//                .stream().map(this::mapToResponse)
+//                .toList();
+//    }
 
     @Override
     public List<LeaveResponse> getPendingLeaves() {
-        return leaveRepository.findByStatus(LeaveStatus.PENDING)
+        User manager = currentUserService.getCurrentUser();
+        return leaveRepository.findPendingLeavesByDepartment(LeaveStatus.PENDING,manager.getDepartment().getId())
                 .stream().map(this::mapToResponse).toList();
     }
 
     @Override
     public LeaveResponse approveLeave(Long leaveId) {
+        User manager = currentUserService.getCurrentUser();
         Leave leave = leaveRepository.findById(leaveId).orElseThrow(() -> new ResourceNotFoundException("Leave not found"));
+//        validate leave status
+        if(leave.getStatus() != LeaveStatus.PENDING){
+            throw new IllegalArgumentException("Only pending leaves can be approved");
+        }
+        //department restrication
+        if(!manager.getDepartment().getId()
+                .equals(leave.getUser().getDepartment().getId())){
+            throw new IllegalArgumentException("You can only approve leaves within your department");
+        }
         leave.setStatus(LeaveStatus.APPROVED);
         Leave updatedLeave = leaveRepository.save(leave);
         return mapToResponse(updatedLeave);
@@ -73,7 +99,16 @@ public class LeaveServiceImpl implements LeaveService {
 
     @Override
     public LeaveResponse rejectLeave(Long leaveId) {
+        User manager = currentUserService.getCurrentUser();
         Leave leave = leaveRepository.findById(leaveId).orElseThrow(() -> new ResourceNotFoundException("Leave not found"));
+        if(leave.getStatus() != LeaveStatus.PENDING){
+            throw new IllegalArgumentException("only pending leaves can be rejected");
+        }
+
+        if(!manager.getDepartment().getId()
+                .equals(leave.getUser().getDepartment().getId())){
+            throw new IllegalArgumentException("you can only reject leave within your department");
+        }
         leave.setStatus(LeaveStatus.REJECTED);
         Leave updatedLeave = leaveRepository.save(leave);
         return mapToResponse(updatedLeave);
