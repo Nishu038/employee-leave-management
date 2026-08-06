@@ -1,11 +1,15 @@
 package com.nishu.elms.service.impl;
 
 import com.nishu.elms.dto.request.LeaveRequest;
+import com.nishu.elms.dto.response.LeaveBalanceResponse;
 import com.nishu.elms.dto.response.LeaveResponse;
 import com.nishu.elms.entity.Leave;
+import com.nishu.elms.entity.LeaveBalance;
 import com.nishu.elms.entity.User;
 import com.nishu.elms.enums.LeaveStatus;
+import com.nishu.elms.enums.LeaveType;
 import com.nishu.elms.exception.ResourceNotFoundException;
+import com.nishu.elms.repository.LeaveBalanceRepository;
 import com.nishu.elms.repository.LeaveRepository;
 import com.nishu.elms.repository.UserRepository;
 import com.nishu.elms.service.CurrentUserService;
@@ -16,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -25,6 +30,7 @@ public class LeaveServiceImpl implements LeaveService {
     private final LeaveRepository leaveRepository;
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
+    private final LeaveBalanceRepository leaveBalanceRepository;
 
     @Override
     public LeaveResponse applyLeave(LeaveRequest request) {
@@ -35,6 +41,7 @@ public class LeaveServiceImpl implements LeaveService {
                 .endDate(request.getEndDate())
                 .status(LeaveStatus.PENDING)
                 .user(user)
+                .leaveType(request.getLeaveType())
                 .build();
 
         Leave savedLeave = leaveRepository.save(leave);
@@ -87,12 +94,18 @@ public class LeaveServiceImpl implements LeaveService {
         if(leave.getStatus() != LeaveStatus.PENDING){
             throw new IllegalArgumentException("Only pending leaves can be approved");
         }
-        //department restrication
+        //department restriction
         if(!manager.getDepartment().getId()
                 .equals(leave.getUser().getDepartment().getId())){
             throw new IllegalArgumentException("You can only approve leaves within your department");
         }
+        LeaveBalance balance = leaveBalanceRepository.findByUser(leave.getUser())
+                        .orElseThrow(()-> new ResourceNotFoundException("Leave balance not found"));
+        int leaveDays = calculateLeaveDays(leave);
+        deductLeaveBalance(balance,leave.getLeaveType(),leaveDays);
+
         leave.setStatus(LeaveStatus.APPROVED);
+        leaveBalanceRepository.save(balance);
         Leave updatedLeave = leaveRepository.save(leave);
         return mapToResponse(updatedLeave);
     }
@@ -112,5 +125,54 @@ public class LeaveServiceImpl implements LeaveService {
         leave.setStatus(LeaveStatus.REJECTED);
         Leave updatedLeave = leaveRepository.save(leave);
         return mapToResponse(updatedLeave);
+    }
+
+    @Override
+    public LeaveBalanceResponse getMyLeaveBalance() {
+        User user = currentUserService.getCurrentUser();
+        LeaveBalance balance = leaveBalanceRepository.findByUser(user)
+                .orElseThrow(()-> new ResourceNotFoundException("leave balance not found"));
+        return LeaveBalanceResponse.builder()
+                .casualLeave(balance.getCasualLeave())
+                .sickLeave(balance.getSickLeave())
+                .earnedLeave(balance.getEarnedLeaves())
+                .build();
+    }
+
+    private int calculateLeaveDays(Leave leave){
+        return (int) ChronoUnit.DAYS.between(
+                leave.getStartDate(),
+                leave.getEndDate()
+        )+1;
+    }
+    private void deductLeaveBalance(LeaveBalance balance,
+                                    LeaveType leaveType,
+                                    int leaveDays){
+        switch (leaveType){
+            case CASUAL -> {
+                if(balance.getCasualLeave()<leaveDays){
+                    throw new IllegalStateException("Insufficient casual leave balance");
+                }
+                balance.setCasualLeave(
+                        balance.getCasualLeave() - leaveDays
+                );
+            }
+            case SICK -> {
+                if(balance.getSickLeave()<leaveDays){
+                    throw new IllegalStateException("Insufficient sick leave balance");
+                }
+                balance.setSickLeave(
+                        balance.getCasualLeave() - leaveDays
+                );
+            }
+            case EARNED -> {
+                if(balance.getEarnedLeaves()<leaveDays){
+                    throw new IllegalStateException("Insufficient earned leave balance");
+                }
+                balance.setEarnedLeaves(
+                        balance.getCasualLeave() - leaveDays
+                );
+            }
+        }
     }
 }

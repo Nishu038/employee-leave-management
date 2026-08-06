@@ -1,6 +1,7 @@
 package com.nishu.elms.entity;
 
 import com.nishu.elms.enums.LeaveStatus;
+import com.nishu.elms.enums.LeaveType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +34,10 @@ public class Leave {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LeaveType leaveType;
 
 
 

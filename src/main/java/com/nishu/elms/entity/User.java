@@ -53,4 +53,6 @@ public class User extends BaseEntity{
     @JoinColumn(name = "department_id")
     private Department department;
 
+   @OneToOne(mappedBy = "user",cascade = CascadeType.ALL)
+    private LeaveBalance leaveBalance;
 }

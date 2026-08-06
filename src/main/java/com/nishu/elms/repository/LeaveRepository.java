@@ -39,4 +39,5 @@ public interface LeaveRepository extends JpaRepository<Leave,Long> {
             LeaveStatus status,
             Pageable pageable
     );
+    long countByStatus(LeaveStatus status);
 }

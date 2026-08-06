@@ -19,4 +19,5 @@ public interface UserRepository extends JpaRepository<User,Long> {
             @Param("email") String email
     );
     boolean existsByEmail(String email);
+    long countByEnabledTrue();
 }

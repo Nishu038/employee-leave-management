@@ -1,6 +1,7 @@
 package com.nishu.elms.service;
 
 import com.nishu.elms.dto.request.LeaveRequest;
+import com.nishu.elms.dto.response.LeaveBalanceResponse;
 import com.nishu.elms.dto.response.LeaveResponse;
 import com.nishu.elms.enums.LeaveStatus;
 import org.springframework.data.domain.Page;
@@ -19,4 +20,5 @@ public interface LeaveService {
     List<LeaveResponse> getPendingLeaves();
     LeaveResponse approveLeave(Long leaveId);
     LeaveResponse rejectLeave(Long leaveId);
+    LeaveBalanceResponse getMyLeaveBalance();
 }

@@ -1,10 +1,12 @@
 package com.nishu.elms.startup;
 
 import com.nishu.elms.entity.Department;
+import com.nishu.elms.entity.LeaveBalance;
 import com.nishu.elms.entity.Role;
 import com.nishu.elms.entity.User;
 import com.nishu.elms.enums.RoleName;
 import com.nishu.elms.repository.DepartmentRepository;
+import com.nishu.elms.repository.LeaveBalanceRepository;
 import com.nishu.elms.repository.RoleRepository;
 import com.nishu.elms.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class RoleDataInitializer implements CommandLineRunner {
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LeaveBalanceRepository leaveBalanceRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -39,9 +42,10 @@ public class RoleDataInitializer implements CommandLineRunner {
         Department hr = createDepartmentIfNotExists("HR");
 
         // Create Users
-        createUserIfNotExists( "Admin", "User", "admin@gmail.com", "Password@123", "9999999999", RoleName.ROLE_ADMIN, engineering );
-        createUserIfNotExists( "Manager", "User", "manager@gmail.com", "Password@123", "8888888888", RoleName.ROLE_MANAGER, engineering );
-        createUserIfNotExists( "Employee", "User", "employee@gmail.com", "Password@123", "7777777777", RoleName.ROLE_EMPLOYEE, hr );
+        createUserIfNotExists( "Admin", "User", "admin2@gmail.com", "Password@123", "9999999999", RoleName.ROLE_ADMIN, engineering );
+        createUserIfNotExists( "Manager", "User", "manager2@gmail.com", "Password@123", "8888888888", RoleName.ROLE_MANAGER, engineering );
+        createUserIfNotExists( "Employee", "User", "employee2@gmail.com", "Password@123", "7777777777", RoleName.ROLE_EMPLOYEE, hr );
+
     }
 
     private void createRoleIfNotExists(RoleName roleName,String description){
@@ -81,5 +85,15 @@ public class RoleDataInitializer implements CommandLineRunner {
                 .build();
         user.setRoles(Set.of(role));
         userRepository.save(user);
+
+        LeaveBalance balance = LeaveBalance.builder()
+                .user(user)
+                .casualLeave(10)
+                .sickLeave(8)
+                .earnedLeaves(15).build();
+        balance.setUser(user);
+        user.setLeaveBalance(balance);
+        leaveBalanceRepository.save(balance);
+
     }
 }

@@ -1,6 +1,7 @@
 package com.nishu.elms.controller;
 
 import com.nishu.elms.dto.request.LeaveRequest;
+import com.nishu.elms.dto.response.LeaveBalanceResponse;
 import com.nishu.elms.dto.response.LeaveResponse;
 import com.nishu.elms.entity.Leave;
 import com.nishu.elms.entity.User;
@@ -61,5 +62,10 @@ public class LeaveController {
     public ResponseEntity<LeaveResponse> rejectLeave(@PathVariable Long id){
         return ResponseEntity.ok(leaveService.rejectLeave(id));
 
+    }
+
+    @GetMapping("/balance")
+    public ResponseEntity<LeaveBalanceResponse> getMyLeaveBalance(){
+        return ResponseEntity.ok(leaveService.getMyLeaveBalance());
     }
 }

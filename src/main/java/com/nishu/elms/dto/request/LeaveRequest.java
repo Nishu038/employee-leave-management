@@ -1,5 +1,6 @@
 package com.nishu.elms.dto.request;
 
+import com.nishu.elms.enums.LeaveType;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,5 +23,8 @@ public class LeaveRequest {
 
     @NotNull(message = "End date is required")
     LocalDate endDate;
+
+    @NotNull(message = "Leave type is required")
+    private LeaveType leaveType;
 
 }
